@@ -5,7 +5,6 @@
 import Package
 import os
 import PackageUtil
-import Log
 import Exceptions
 import shutil
 
@@ -44,25 +43,16 @@ class LocalPackage( Package.Package ):
         if self._Graphical and not PackageUtil.kGraphical:
             raise Exceptions.PackageException( "Install Error", "Must be a graphical install." )
         if not self.IsInstalled():
-            try:
-                self._Install()
-                self._SetMode(2)
-            except Exception:
-                Log.Error( "Install error for %s" % self._Name )
-                Log.Detail( self._InstallPipe )
-                raise
+            self._Install()
+            self._SetMode(2)
+
     def Download( self ):
         """ Full download process."""
         self.CheckState()
         if not self.IsDownloaded():
-            try: 
-                self._Download()
-                self._SetMode(1)
-            except Exception:
-                Log.Error( "Download error for %s" % self._Name )
-                Log.Detail( self._DownloadPipe )
-                raise
-        return
+            self._Download()
+            self._SetMode(1)
+
     def Update( self ):
         """ Update the package install, usually deletes and reinstalls..."""
         self.CheckState()

@@ -1,5 +1,5 @@
 #!/bin/bash
-export PYTHONPATH=$PWD:$PWD/core:$PWD/packages:$PWD/versions:$PYTHONPATH
+export PYTHONPATH=$PWD:$PWD/core:$PWD/packages:$PWD/versions:$PWD/output:$PYTHONPATH
 echo "snoing setup"
 printf "%-50s" "Checking for git..."
 which git &> /dev/null

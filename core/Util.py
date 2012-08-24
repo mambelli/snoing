@@ -33,18 +33,18 @@ def DeSerialise( path ):
     else:
         return None
 
-def CheckSystem():
+def CheckSystem( logger ):
     """ Check for G4 in the environment and check if mac."""
     # Check the environment is clean
     env = os.environ
     for envbit in env: #check clean environment
         inenv = env[envbit].find('G4')
         if inenv!=-1:
-            Log.Error( "G4... environment variables are present, please run in a clean environment." )
+            logger.error( "G4... environment variables are present, please run in a clean environment." )
             sys.exit(1)
     # Check g++ is installed (python and g++ are the only prerequisites)
     if PackageUtil.FindLibrary( "g++" ) is None:
-        Log.Error( "g++ must be installed for snoing to work, try installing build essentials or xcode." )
+        logger.error( "g++ must be installed for snoing to work, try installing build essentials or xcode." )
         sys.exit(1)
     system =  os.uname()[0]
     if system == 'Darwin':

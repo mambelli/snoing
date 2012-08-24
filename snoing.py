@@ -6,7 +6,7 @@ import os
 import inspect
 import PackageUtil
 import Rat
-import Log
+import TextLogger
 import Util
 import sys
 import Exceptions
@@ -15,22 +15,23 @@ class snoing( PackageManager.PackageManager ):
     """ The package manager for sno+."""
     def __init__( self, options ):
         """ Initialise the snoing package manager."""
-        import sys
         super( snoing, self ).__init__()
-        Util.CheckSystem()
+        # Build the folders, initialise the logger and check the system
         PackageUtil.kCachePath = Util.BuildDirectory( options.cachePath )
         PackageUtil.kInstallPath = Util.BuildDirectory( options.installPath )
-        Log.kInfoFile = Log.LogFile( os.path.join( PackageUtil.kInstallPath, "README.md" ), True )
-        # Set the local details file
-        Log.kDetailsFile = Log.LogFile( os.path.join( os.path.dirname( __file__ ), "snoing.log" ) )
-        Log.Detail( options )
-        Log.Detail( os.uname()[0] )
-        Log.Detail( os.uname()[2] )
-        Log.Header( "Caching to %s, installing to %s" % ( PackageUtil.kCachePath, PackageUtil.kInstallPath ) )
+        self._logger = TextLogger.TextLogger(os.path.join(os.path.dirname(__file__), "snoing.log"),
+                                             os.path.join(PackageUtil.kInstallPath, "README.md"))
+
+        Util.CheckSystem(self._logger)
+        # Now ready to start
+        self._logger.info(options)
+        self._logger.info(os.uname()[0])
+        self._logger.info(os.uname()[2])
+        self._logger.info("Caching to %s, installing to %s" % (PackageUtil.kCachePath, PackageUtil.kInstallPath))
         # Now check the install options are compatible with install directory
         if options.graphical == True and options.grid == True:
-            Log.Error( "Cannot be both graphical and grid." )
-            self.PrintErrorMessage()
+            self._logger.error("Cannot be both graphical and grid.")
+            self.print_error_message()
         snoingSettingsPath = os.path.join( PackageUtil.kInstallPath, "snoing.pkl" )
         installModes = Util.DeSerialise( snoingSettingsPath )
         # Set the file options if not set
@@ -39,9 +40,9 @@ class snoing( PackageManager.PackageManager ):
             Util.Serialise( snoingSettingsPath, installModes )
         # Check the options match
         if installModes["Graphical"] != options.graphical or installModes["Grid"] != options.grid:
-            Log.Error( "Install mode for install directory does not match that specified. Install path is graphical %s and grid %s" \
-                           % ( options.graphical, options.grid ) )
-            self.PrintErrorMessage()
+            self._logger.error( "Install mode for install directory does not match that specified. Install path is graphical %s and grid %s" \
+                                    % ( options.graphical, options.grid ) )
+            self.print_error_message()
         PackageUtil.kGraphical = options.graphical
         PackageUtil.kGrid = options.grid
         # First import all register all packages in the versions folder
@@ -53,11 +54,11 @@ class snoing( PackageManager.PackageManager ):
         for package in self._Packages:
             if isinstance( self._Packages[package], Rat.RatRelease ):
                 self._Packages[package].SetGithubAuthentication( options.username, options.token )
-    def PrintErrorMessage( self ):
+    def print_error_message(self):
         """Print a standard error message if snoing fails."""
-        Log.Error( "Snoing has failed, please consult the above error messages or the snoing.log file." )
+        self._logger.error("Snoing has failed, please consult the above error messages or the snoing.log file.")
         sys.exit(1)
-        return
+
 
 if __name__ == "__main__":
     import optparse
@@ -95,21 +96,21 @@ if __name__ == "__main__":
     defaults["install"] = options.installPath
     Util.Serialise( defaultFilePath, defaults )
     # Construct snoing installer
-    Log.Header( "Registering Packages" )
     PackageUtil.kVerbose = options.verbose
     installer = snoing( options )
     installer.Authenticate( options )
+    installer._logger.info("Registering Packages")
 
     # Default action is to assume installing, check for other actions
     try:
         if options.all: # Wish to act on all packages
             if options.query: # Wish to query all packages
-                installer.CheckAll()
+                pass # Nothing todo, done automatically
             elif options.remove: # Wish to remove all packages
                 shutil.rmtree( PackageUtil.kInstallPath )
             elif options.dependency: # Doesn't make sense
-                Log.warn( "Input options don't make sense." )
-                installer.PrintErrorMessage()
+                self._logger.error("Input options don't make sense.")
+                installer.print_error_message()
             elif options.progress: # Update all installed
                 installer.UpdateAll()
             else: # Wish to install all
@@ -122,11 +123,11 @@ if __name__ == "__main__":
             if len(args) != 0:
                 packageName = args[0]
             if options.query: # Wish to query the package
-                Log.Info( "Checking package %s install status" % packageName )
+                self._logger.info( "Checking package %s install status" % packageName )
                 if installer.CheckPackage( packageName ):
-                    Log.Result( "Installed" )
+                    installer._logger.package_installed("Installed")
                 else:
-                    Log.Warn( "Not Installed" )
+                    installer._logger.info("Not Installed")
             elif options.remove or options.forceRemove: # Wish to remove the package
                 installer.RemovePackage( packageName, options.forceRemove )
             elif options.dependency: # Wish to install only the dependencies
@@ -137,4 +138,4 @@ if __name__ == "__main__":
                 installer.InstallPackage( packageName )
     except Exceptions.InstallException, e:
         print e
-        installer.PrintErrorMessage()
+        installer.print_error_message()
