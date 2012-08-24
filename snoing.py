@@ -7,6 +7,7 @@ import inspect
 import PackageUtil
 import Rat
 import TextLogger
+import GraphicalLogger
 import Util
 import sys
 import Exceptions
@@ -19,8 +20,12 @@ class snoing( PackageManager.PackageManager ):
         # Build the folders, initialise the logger and check the system
         PackageUtil.kCachePath = Util.BuildDirectory( options.cachePath )
         PackageUtil.kInstallPath = Util.BuildDirectory( options.installPath )
-        self._logger = TextLogger.TextLogger(os.path.join(os.path.dirname(__file__), "snoing.log"),
-                                             os.path.join(PackageUtil.kInstallPath, "README.md"))
+        if PackageUtil.kVerbose:
+            self._logger = TextLogger.TextLogger(os.path.join(os.path.dirname(__file__), "snoing.log"),
+                                                 os.path.join(PackageUtil.kInstallPath, "README.md"))
+        else:
+            self._logger = GraphicalLogger.GraphicalLogger(os.path.join(os.path.dirname(__file__), "snoing.log"),
+                                                           os.path.join(PackageUtil.kInstallPath, "README.md"))
 
         Util.CheckSystem(self._logger)
         # Now ready to start
@@ -45,8 +50,6 @@ class snoing( PackageManager.PackageManager ):
             self.print_error_message()
         PackageUtil.kGraphical = options.graphical
         PackageUtil.kGrid = options.grid
-        # First import all register all packages in the versions folder
-        self.RegisterPackagesInDirectory( os.path.join( os.path.dirname( __file__ ), "versions" ) )
         return
     def Authenticate( self, options ):
         """ Set the github authentication."""
@@ -57,6 +60,7 @@ class snoing( PackageManager.PackageManager ):
     def print_error_message(self):
         """Print a standard error message if snoing fails."""
         self._logger.error("Snoing has failed, please consult the above error messages or the snoing.log file.")
+        self._logger._running = False
         sys.exit(1)
 
 
@@ -96,13 +100,14 @@ if __name__ == "__main__":
     defaults["install"] = options.installPath
     Util.Serialise( defaultFilePath, defaults )
     # Construct snoing installer
-    PackageUtil.kVerbose = options.verbose
+    PackageUtil.kVerbose = options.verbose or options.query
     installer = snoing( options )
-    installer.Authenticate( options )
-    installer._logger.info("Registering Packages")
-
     # Default action is to assume installing, check for other actions
     try:
+        # First import all register all packages in the versions folder
+        installer.RegisterPackagesInDirectory( os.path.join( os.path.dirname( __file__ ), "versions" ) )
+        installer.Authenticate( options )
+        installer._logger.info("Registering Packages")
         if options.all: # Wish to act on all packages
             if options.query: # Wish to query all packages
                 pass # Nothing todo, done automatically
@@ -123,9 +128,9 @@ if __name__ == "__main__":
             if len(args) != 0:
                 packageName = args[0]
             if options.query: # Wish to query the package
-                self._logger.info( "Checking package %s install status" % packageName )
+                installer._logger.info( "Checking package %s install status" % packageName )
                 if installer.CheckPackage( packageName ):
-                    installer._logger.package_installed("Installed")
+                    installer._logger.package_installed(packageName)
                 else:
                     installer._logger.info("Not Installed")
             elif options.remove or options.forceRemove: # Wish to remove the package
@@ -136,6 +141,9 @@ if __name__ == "__main__":
                 installer.UpdatePackage( packageName )
             else: # Wish to install the package
                 installer.InstallPackage( packageName )
+        installer._logger._running = False
     except Exceptions.InstallException, e:
         print e
+        installer.print_error_message()
+    except (KeyboardInterrupt, SystemExit):
         installer.print_error_message()

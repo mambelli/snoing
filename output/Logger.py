@@ -61,3 +61,4 @@ class Logger(object):
         file_ = open(self._install_file, "a")
         file_.write(text)
         file_.close()
+

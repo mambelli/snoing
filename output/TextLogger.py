@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Author P G Jones - 24/08/2012 <p.g.jones@qmul.ac.uk> : First revision
-# Base logger class, this saves information to file, but does not display to screen
+# Text logger class, print logging information to the screen
 import Logger
 
 HEADER = '\033[95m'
