@@ -24,11 +24,19 @@ class GraphicalLogger(Logger.Logger, threading.Thread):
         curses.start_color()
         curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        self._state = ""
         self._lock = threading.Lock()
         self.draw_splash()
         sleep(2)
         self._running = True
         self.start()
+
+    def end(self):
+        """ Close the screen and cleanup."""
+        self._running = False
+        self.join()
+        curses.endwin()
 
     def package_registered(self, package_name):
         """ Notify that a package has been registered."""
@@ -53,7 +61,7 @@ class GraphicalLogger(Logger.Logger, threading.Thread):
         x = int(random.random() * (self._screen.getmaxyx()[1] - 2)) + 1
         for snoflake in self._snoflakes:
             if not snoflake.active():
-                snoflake.begin(0, x, package_name)
+                snoflake.begin(1, x, package_name)
                 break
 
     def package_removed(self, package_name):
@@ -67,6 +75,11 @@ class GraphicalLogger(Logger.Logger, threading.Thread):
         """ Notify that a package has been updated."""
         super(GraphicalLogger, self).package_updated(package_name)
 
+    def set_state(self, state):
+        """ Notify the current state."""
+        super(GraphicalLogger, self).set_state(state)
+        self._state = state
+
     def info(self, info_message):
         """ Output some information."""
         super(GraphicalLogger, self).info(info_message)
@@ -79,33 +92,33 @@ class GraphicalLogger(Logger.Logger, threading.Thread):
     # Graphical aspects
     def draw_splash(self):
         """ Draw the splash screen."""
-        windowSize = self._screen.getmaxyx() # In y,x
+        window_size = self._screen.getmaxyx() # In y,x
         self._screen.clear() 
         snoing_str = "snoing 2012"
-        self._screen.addstr(windowSize[0] / 2, (windowSize[1] - len(snoing_str)) / 2, snoing_str)
+        self._screen.addstr(window_size[0] / 2, (window_size[1] - len(snoing_str)) / 2, snoing_str)
         author_str = "P Jones M Mottram O Wasalski"
-        self._screen.addstr(windowSize[0] - 1, windowSize[1] - len(author_str) - 1, author_str)
+        self._screen.addstr(window_size[0] - 1, window_size[1] - len(author_str) - 1, author_str)
         self._screen.refresh()
 
     def run(self):
         """ The main loop."""
         while self._running:
             sleep(1.0) # Sleep for 1 second (refresh rate)
-            windowSize = self._screen.getmaxyx() # In y,x
-            topCursor = [0,0] # In y,x
-            bottomCursor = [windowSize[0] - 1,0] # In y,x
+            window_size = self._screen.getmaxyx() # In y,x
+            topCursor = [1,0] # In y,x, first row is state
+            bottomCursor = [window_size[0] - 1,0] # In y,x
             self._screen.clear() 
             # Draw the package information
             self._lock.acquire()
             for package in self._packages:
                 if(self._packages[package] == 0 or self._packages[package] == 1): # Draw at top
-                    if topCursor[1] + len(package) + 1 >= windowSize[1]: # Word wrap
+                    if topCursor[1] + len(package) + 1 >= window_size[1]: # Word wrap
                         topCursor[1] = 0
                         topCursor[0] += 1
                     self._screen.addstr(topCursor[0], topCursor[1], package + " ", curses.color_pair(self._packages[package]))
                     topCursor[1] += len(package) + 1
                 elif(self._packages[package] == 2): # Draw at bottom
-                    if bottomCursor[1] + len(package) + 1 >= windowSize[1]: # Word wrap
+                    if bottomCursor[1] + len(package) + 1 >= window_size[1]: # Word wrap
                         bottomCursor[1] = 0
                         bottomCursor[0] -= 1
                     self._screen.addstr(bottomCursor[0], bottomCursor[1], package, curses.color_pair(self._packages[package]))
@@ -116,8 +129,8 @@ class GraphicalLogger(Logger.Logger, threading.Thread):
                 if snoflake.active():
                     snoflake.update(bottomCursor[0]) # Moves and renders
                 elif( random.random() > 0.9 ): # Create it?
-                    x = int(random.random() * (windowSize[1] - 2)) + 1
+                    x = int(random.random() * (window_size[1] - 2)) + 1
                     snoflake.begin(topCursor[0] + 1, x, "*")
+            # Draw the state information
+            self._screen.addstr(0, (window_size[1] - len(self._state)) / 2, self._state, curses.color_pair(3))
             self._screen.refresh()
-        # After loop has ended, close curses
-        curses.endwin()

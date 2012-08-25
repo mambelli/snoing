@@ -59,8 +59,8 @@ class snoing( PackageManager.PackageManager ):
                 self._Packages[package].SetGithubAuthentication( options.username, options.token )
     def print_error_message(self):
         """Print a standard error message if snoing fails."""
+        self._logger.end()
         self._logger.error("Snoing has failed, please consult the above error messages or the snoing.log file.")
-        self._logger._running = False
         sys.exit(1)
 
 
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                 installer.UpdatePackage( packageName )
             else: # Wish to install the package
                 installer.InstallPackage( packageName )
-        installer._logger._running = False
+        installer._logger.end()
     except Exceptions.InstallException, e:
         print e
         installer.print_error_message()

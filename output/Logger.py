@@ -19,6 +19,10 @@ class Logger(object):
         if os.path.exists(self._local_file):
             os.remove(self._local_file)
 
+    def end(self):
+        """ Stop logging, cleanup resources."""
+        pass
+
     def package_registered(self, package_name):
         """ Notify that a package has been registered."""
         self._write_local("Package %s registered.\n" % package_name)
@@ -41,6 +45,10 @@ class Logger(object):
         """ Notify that a package has been updated."""
         self._write_local("Package %s updated.\n" % package_name)
         self._write_install("Package %s updated.\n" % package_name)
+
+    def set_state(self, state):
+        """ Notify the current state."""
+        self._write_local("%s\n" % state)
 
     def info(self, info_message):
         """ Output some information."""

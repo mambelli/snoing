@@ -70,7 +70,7 @@ class PackageManager( object ):
             dependencies = self._InstallDependencies( package )
             # Now install the package
             package.SetDependencyPaths( dependencies )
-            self._logger.info("Installing %s" % package.GetName())
+            self._logger.set_state("Installing %s" % package.GetName())
             try:
                 package.Install()
             except Exceptions.PackageException, e:
@@ -132,6 +132,7 @@ class PackageManager( object ):
                             self._logger.error( "Cannot remove %s as %s depends on it." % ( packageName, testPackage.GetName() ) )
                             raise Exceptions.InstallException( "Cannot remove", packageName )
         # If get here then package can be deleted
+        self._logger.set_state("Removing %s package." % packageName)
         package.Remove()
         self._logger.package_removed(packageName)
         return
@@ -148,7 +149,7 @@ class PackageManager( object ):
             raise Exceptions.InstallException( "Cannot update", packageName )
         if package.IsUpdated(): # Nothing todo if already updated
             return
-        self._logger.info("Updating %s" % packageName)
+        self._logger.set_state("Updating %s" % packageName)
         dependencies = self._InstallDependencies( package )
         package.SetDependencyPaths( dependencies )
         package.Update()
