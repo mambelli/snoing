@@ -60,7 +60,7 @@ class snoing( PackageManager.PackageManager ):
     def print_error_message(self):
         """Print a standard error message if snoing fails."""
         self._logger.end()
-        self._logger.error("Snoing has failed, please consult the above error messages or the snoing.log file.")
+        print "Snoing has failed, please consult the above error messages or the snoing.log file."
         sys.exit(1)
 
 

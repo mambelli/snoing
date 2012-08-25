@@ -25,7 +25,8 @@ class GraphicalLogger(Logger.Logger, threading.Thread):
         curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        self._state = ""
+        self._state = "Initialising"
+        self._errors = ""
         self._lock = threading.Lock()
         self.draw_splash()
         sleep(2)
@@ -37,6 +38,7 @@ class GraphicalLogger(Logger.Logger, threading.Thread):
         self._running = False
         self.join()
         curses.endwin()
+        print self._errors
 
     def package_registered(self, package_name):
         """ Notify that a package has been registered."""
@@ -86,7 +88,7 @@ class GraphicalLogger(Logger.Logger, threading.Thread):
 
     def error(self, error_message):
         """ Notify that an error has occurred."""
-        print error_message
+        self._errors += error_message + "\n"
         super(GraphicalLogger, self).error(error_message)
 
     # Graphical aspects
